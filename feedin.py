@@ -2,9 +2,14 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone, ServerlessSpec
 import io 
+from dotenv import load_dotenv
+import os
 
 
-API_KEY = "pcsk_LASs4_6wj1qLq55vEYQZoS43iu8sFsB4rCWWiyuBMUH7nJUY9yZSXHihiHvDAvvsxKmUw" 
+load_dotenv()
+
+
+API_KEY = os.getenv("PINECONE_API_KEY")
 ENVIRONMENT = "us-east-1" 
 INDEX_NAME = "product-recommendation-index"
 EMBEDDING_MODEL_NAME = 'all-MiniLM-L6-v2' 
