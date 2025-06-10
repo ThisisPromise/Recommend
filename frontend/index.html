@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Recommendation System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #0056b3;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .nav-buttons {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+        .nav-buttons button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            margin: 0 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .nav-buttons button:hover {
+            background-color: #0056b3;
+        }
+        .nav-buttons button.active {
+            background-color: #0056b3;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .page-section {
+            display: none; 
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background-color: #fcfcfc;
+        }
+        .page-section.active {
+            display: block; 
+        }
+        .query-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .query-form input[type="text"],
+        .query-form input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            width: calc(100% - 22px);
+        }
+        .query-form button[type="submit"] { 
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .query-form button[type="submit"]:hover {
+            background-color: #218838;
+        }
+        .response-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        #naturalLanguageResponse {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        #loadingMessage, #errorMessage {
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        #loadingMessage {
+            background-color: #e7f3ff;
+            color: #0056b3;
+        }
+        #errorMessage {
+            background-color: #ffe0e0;
+            color: #dc3545;
+        }
+        .product-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .product-table th, .product-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .product-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            color: #555;
+        }
+        .product-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .product-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        #extractedTextDisplay, #cnnIdentifiedClass { 
+            margin-top: 10px;
+            font-style: italic;
+            color: #666;
+        }
+        #cnnIdentifiedClass {
+            font-weight: bold;
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Product Recommendation System</h1>
+
+        <div class="nav-buttons">
+            <button id="showTextQueryBtn" class="active">Text Query</button>
+            <button id="showOcrQueryBtn">Image Query (OCR)</button>
+            <button id="showImageUploadBtn">Product Image</button>
+        </div>
+
+        <div id="textQuerySection" class="page-section active">
+            <h2>Text-based Recommendation</h2>
+            <form id="textQueryForm" class="query-form">
+                <input type="text" id="queryInput" placeholder="Enter your query (e.g., 'decorative item for living room')">
+                <button type="submit">Get Recommendations</button>
+            </form>
+        </div>
+
+        <div id="ocrQuerySection" class="page-section">
+            <h2>Image-based Query (OCR)</h2>
+            <form id="ocrQueryForm" class="query-form">
+                <input type="file" id="ocrImageInput" accept="image/*">
+                <button type="submit">Extract Text & Get Recommendations</button>
+                <p id="extractedTextDisplay"></p>
+            </form>
+        </div>
+
+        <div id="imageUploadSection" class="page-section">
+            <h2>Product Image Recognition</h2>
+            <form id="productImageForm" class="query-form">
+                <input type="file" id="productImageInput" accept="image/*">
+                <button type="submit">Identify Product & Get Recommendations</button>
+                <p id="cnnIdentifiedClass"></p>
+                </form>
+        </div>
+
+        <hr>
+
+        <div class="response-section">
+            <p id="naturalLanguageResponse">Select an interface and enter a query to get product recommendations.</p>
+            <div id="loadingMessage" style="display: none;">Loading recommendations...</div>
+            <div id="errorMessage" style="display: none;"></div>
+            
+            <table class="product-table">
+                <thead>
+                    <tr>
+                        <th>Stock Code</th>
+                        <th>Description</th>
+                        <th>Unit Price</th>
+                    </tr>
+                </thead>
+                <tbody id="productTableBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+   
+        const API_TEXT_QUERY = 'http://127.0.0.1:5000/recommend_products';
+        const API_OCR_QUERY = 'http://127.0.0.1:5000/ocr_recommend_products';
+        const API_IMAGE_UPLOAD = 'http://127.0.0.1:5000/image_detect_products';
+
+        const showTextQueryBtn = document.getElementById('showTextQueryBtn');
+        const showOcrQueryBtn = document.getElementById('showOcrQueryBtn');
+        const showImageUploadBtn = document.getElementById('showImageUploadBtn');
+        const textQuerySection = document.getElementById('textQuerySection');
+        const ocrQuerySection = document.getElementById('ocrQuerySection');
+        const imageUploadSection = document.getElementById('imageUploadSection');
+        const textQueryForm = document.getElementById('textQueryForm');
+        const ocrQueryForm = document.getElementById('ocrQueryForm');
+        const productImageForm = document.getElementById('productImageForm');
+        const queryInput = document.getElementById('queryInput');
+        const ocrImageInput = document.getElementById('ocrImageInput');
+        const productImageInput = document.getElementById('productImageInput');
+        const extractedTextDisplay = document.getElementById('extractedTextDisplay');
+        const cnnIdentifiedClass = document.getElementById('cnnIdentifiedClass');
+        const naturalLanguageResponse = document.getElementById('naturalLanguageResponse');
+        const productTableBody = document.getElementById('productTableBody');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+
+        function clearResults() {
+            naturalLanguageResponse.textContent = '';
+            productTableBody.innerHTML = ''; 
+            errorMessage.style.display = 'none';
+            
+   
+            extractedTextDisplay.textContent = '';
+            cnnIdentifiedClass.textContent = '';
+        
+
+            queryInput.value = ''; 
+            ocrImageInput.value = ''; 
+            productImageInput.value = '';
+        }
+
+        function showLoading() {
+            clearResults(); 
+            loadingMessage.style.display = 'block';
+            naturalLanguageResponse.textContent = 'Loading recommendations...';
+        }
+
+        function hideLoading() {
+            loadingMessage.style.display = 'none';
+        }
+
+        function displayError(message) {
+            hideLoading();
+            errorMessage.textContent = `Error: ${message}`;
+            errorMessage.style.display = 'block';
+            naturalLanguageResponse.textContent = 'Recommendation failed.';
+        }
+
+        function populateTable(products) {
+            if (products && products.length > 0) {
+                products.forEach(product => {
+                    const row = productTableBody.insertRow();
+                    row.insertCell(0).textContent = product.stock_code;
+                    row.insertCell(1).textContent = product.description;
+                    row.insertCell(2).textContent = parseFloat(product.unit_price).toFixed(2);
+                });
+            } else {
+                productTableBody.innerHTML = '<tr><td colspan="3">No specific products found.</td></tr>';
+            }
+        }
+
+        function activateSection(sectionId) {
+            document.querySelectorAll('.page-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+
+            document.querySelectorAll('.nav-buttons button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+    
+            document.getElementById('show' + sectionId.replace('Section', '') + 'Btn').classList.add('active');
+
+            clearResults(); 
+            naturalLanguageResponse.textContent = 'Select an interface and enter a query to get product recommendations.'; 
+        }
+
+       
+        showTextQueryBtn.addEventListener('click', () => activateSection('textQuerySection'));
+        showOcrQueryBtn.addEventListener('click', () => activateSection('ocrQuerySection'));
+        showImageUploadBtn.addEventListener('click', () => activateSection('imageUploadSection'));
+
+        textQueryForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); 
+            const query = queryInput.value.trim();
+
+            if (!query) {
+                displayError("Please enter a text query.");
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(API_TEXT_QUERY, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (response.ok) {
+                    naturalLanguageResponse.textContent = data.message;
+                    populateTable(data.recommended_products);
+                } else {
+                    displayError(data.message || 'Something went wrong on the server.');
+                }
+            } catch (error) {
+                console.error('Error fetching text recommendations:', error);
+                displayError('Network error or server is unreachable. Please ensure the Flask app is running.');
+            }
+        });
+
+        ocrQueryForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); 
+            const file = ocrImageInput.files[0];
+
+            if (!file) {
+                displayError("Please select an image file for OCR.");
+                return;
+            }
+
+            showLoading(); 
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch(API_OCR_QUERY, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (response.ok) {
+                    naturalLanguageResponse.textContent = data.message;
+                    extractedTextDisplay.textContent = `Extracted Text: "${data.extracted_text || 'No text found.'}"`;
+                    populateTable(data.recommended_products);
+                } else {
+                    displayError(data.message || 'Something went wrong on the server.');
+                }
+            } catch (error) {
+                console.error('Error fetching OCR recommendations:', error);
+                displayError('Network error or server is unreachable. Please ensure the Flask app is running.');
+            }
+        });
+
+        productImageForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); 
+            const file = productImageInput.files[0];
+
+            if (!file) {
+                displayError("Please select a product image to identify.");
+                return;
+            }
+
+            showLoading(); 
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch(API_IMAGE_UPLOAD, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (response.ok) {
+                    naturalLanguageResponse.textContent = data.message;
+                    cnnIdentifiedClass.textContent = `Identified Product: ${data.cnn_identified_class || 'N/A'}`;
+                    populateTable(data.recommended_products);
+                } else {
+                    displayError(data.message || 'Something went wrong on the server.');
+                }
+            } catch (error) {
+                console.error('Error fetching product image recommendations:', error);
+                displayError('Network error or server is unreachable. Please ensure the Flask app is running.');
+            }
+        });
+        activateSection('textQuerySection');
+    </script>
+</body>
+</html>
